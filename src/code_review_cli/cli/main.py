@@ -5,8 +5,17 @@ from rich import print
 from rich.console import Console
 from rich.traceback import install
 
-from code_review_cli import __version__
-from .commands import review, config, history
+# Handle both direct execution and package import
+try:
+    from .. import __version__
+    from .commands import review, config, history
+except ImportError:
+    # If running directly, add parent directory to path
+    import sys
+    from pathlib import Path
+    sys.path.insert(0, str(Path(__file__).parent.parent.parent))
+    from code_review_cli import __version__
+    from code_review_cli.cli.commands import review, config, history
 
 # Install rich traceback handler
 install(show_locals=True)
