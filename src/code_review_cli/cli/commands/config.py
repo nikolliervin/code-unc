@@ -1,9 +1,13 @@
 """Configuration command implementation."""
 
 import typer
+from pathlib import Path
 from rich.console import Console
 from rich.table import Table
 from rich.prompt import Prompt
+
+from ...core.config.manager import ConfigManager
+from ...models.config import Config, AIConfig, OutputConfig, GitConfig, CacheConfig, ReviewConfig
 
 console = Console()
 app = typer.Typer()
@@ -22,6 +26,8 @@ def init_config() -> None:
         default="openai"
     )
     
+    # Get API key and model based on provider
+    api_key = None
     if provider == "openai":
         api_key = Prompt.ask("Enter OpenAI API key", password=True)
         model = Prompt.ask(
@@ -57,10 +63,74 @@ def init_config() -> None:
             default="codellama:7b"
         )
     
-    console.print(f"\n[green]✓[/green] Configuration initialized!")
-    console.print(f"Provider: [blue]{provider}[/blue]")
-    console.print(f"Model: [blue]{model}[/blue]")
-    console.print("[yellow]⚠️ Configuration saving not yet implemented[/yellow]")
+    # Create AI configuration
+    ai_config = AIConfig(
+        provider=provider,
+        model=model,
+        temperature=0.1,
+        max_tokens=4000
+    )
+    
+    # Set provider-specific API keys
+    if provider == "openai":
+        ai_config.openai_api_key = api_key
+    elif provider == "anthropic":
+        ai_config.anthropic_api_key = api_key
+    elif provider == "gemini":
+        ai_config.gemini_api_key = api_key
+    elif provider == "ollama":
+        ai_config.ollama_model = model
+    
+    # Create full configuration
+    config = Config(
+        ai=ai_config,
+        output=OutputConfig(
+            format="rich",
+            show_progress=True,
+            show_metrics=True,
+            show_suggestions=True,
+            max_issues_display=50,
+            console_width=None,
+            color_enabled=True
+        ),
+        git=GitConfig(
+            default_source="HEAD",
+            default_target="main",
+            max_diff_size=1000000,
+            include_patterns=[],
+            exclude_patterns=["*.log", "*.tmp", "node_modules/*", ".git/*"],
+            binary_files=False
+        ),
+        cache=CacheConfig(
+            enabled=True,
+            ttl_hours=24,
+            max_size_mb=100,
+            cleanup_interval_hours=168
+        ),
+        review=ReviewConfig(
+            default_focus=[],
+            severity_threshold="LOW",
+            max_files_per_review=100,
+            timeout_seconds=300
+        )
+    )
+    
+    # Save configuration
+    try:
+        config_manager = ConfigManager()
+        config_path = config_manager.save_config(config)
+        
+        console.print(f"\n[green]✓[/green] Configuration saved successfully!")
+        console.print(f"Config file: [blue]{config_path}[/blue]")
+        console.print(f"Provider: [blue]{provider}[/blue]")
+        console.print(f"Model: [blue]{model}[/blue]")
+        
+        if api_key:
+            console.print(f"API Key: [green]••••••••[/green] (hidden)")
+        
+    except Exception as e:
+        console.print(f"[red]❌ Failed to save configuration: {e}[/red]")
+        raise typer.Exit(1)
 
 
 @app.command("show")
