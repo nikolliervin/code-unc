@@ -8,6 +8,7 @@ from rich.prompt import Prompt
 
 from ...core.config.manager import ConfigManager
 from ...models.config import Config, AIConfig, OutputConfig, GitConfig, CacheConfig, ReviewConfig
+from pydantic import ValidationError
 
 console = Console()
 app = typer.Typer()
@@ -138,19 +139,79 @@ def show_config() -> None:
     """Show current configuration."""
     console.print("[bold blue]Current Configuration[/bold blue]\n")
     
-    table = Table(title="Code Review CLI Settings")
-    table.add_column("Setting", style="cyan")
-    table.add_column("Value", style="magenta")
-    
-    # TODO: Load actual config
-    table.add_row("AI Provider", "openai")
-    table.add_row("Model", "gpt-4-turbo")
-    table.add_row("Output Format", "rich")
-    table.add_row("Max Files", "50")
-    table.add_row("Cache Enabled", "true")
-    
-    console.print(table)
-    console.print("\n[yellow]⚠️ Showing placeholder values - actual config loading not yet implemented[/yellow]")
+    try:
+        config_manager = ConfigManager()
+        config = config_manager.load_config()
+        
+        # Main configuration table
+        table = Table(title="Code Review CLI Settings", show_header=True, header_style="bold magenta")
+        table.add_column("Setting", style="cyan", no_wrap=True)
+        table.add_column("Value", style="green")
+        
+        # AI Configuration
+        table.add_row("AI Provider", config.ai.provider)
+        table.add_row("Model", config.ai.model)
+        table.add_row("Temperature", str(config.ai.temperature))
+        table.add_row("Max Tokens", str(config.ai.max_tokens))
+        
+        # Show API key status (hidden for security)
+        if config.ai.provider == "openai" and config.ai.openai_api_key:
+            table.add_row("OpenAI API Key", "••••••••" + config.ai.openai_api_key[-4:] if len(config.ai.openai_api_key) > 4 else "••••••••")
+        elif config.ai.provider == "anthropic" and config.ai.anthropic_api_key:
+            table.add_row("Anthropic API Key", "••••••••" + config.ai.anthropic_api_key[-4:] if len(config.ai.anthropic_api_key) > 4 else "••••••••")
+        elif config.ai.provider == "gemini" and config.ai.gemini_api_key:
+            table.add_row("Gemini API Key", "••••••••" + config.ai.gemini_api_key[-4:] if len(config.ai.gemini_api_key) > 4 else "••••••••")
+        elif config.ai.provider == "ollama":
+            table.add_row("Ollama URL", config.ai.ollama_base_url)
+            table.add_row("Ollama Model", config.ai.ollama_model)
+        
+        # Git Configuration
+        table.add_row("Default Source", config.git.default_source)
+        table.add_row("Default Target", config.git.default_target)
+        table.add_row("Max Diff Size", f"{config.git.max_diff_size:,} bytes")
+        table.add_row("Binary Files", "Yes" if config.git.binary_files else "No")
+        
+        # Output Configuration
+        table.add_row("Output Format", config.output.format)
+        table.add_row("Show Progress", "Yes" if config.output.show_progress else "No")
+        table.add_row("Show Metrics", "Yes" if config.output.show_metrics else "No")
+        table.add_row("Max Issues Display", str(config.output.max_issues_display))
+        table.add_row("Color Enabled", "Yes" if config.output.color_enabled else "No")
+        
+        # Cache Configuration
+        table.add_row("Cache Enabled", "Yes" if config.cache.enabled else "No")
+        table.add_row("Cache TTL", f"{config.cache.ttl_hours} hours")
+        table.add_row("Cache Max Size", f"{config.cache.max_size_mb} MB")
+        
+        # Review Configuration
+        if hasattr(config, 'review') and config.review:
+            table.add_row("Severity Threshold", config.review.severity_threshold)
+            table.add_row("Max Files per Review", str(config.review.max_files_per_review))
+            table.add_row("Timeout", f"{config.review.timeout_seconds} seconds")
+        
+        console.print(table)
+        
+        # Show config file location
+        config_path = config_manager.config_path
+        console.print(f"\n[dim]Config file: {config_path}[/dim]")
+        
+        # Show file patterns if any
+        if config.git.include_patterns:
+            console.print(f"\n[bold]Include Patterns:[/bold]")
+            for pattern in config.git.include_patterns:
+                console.print(f"  • {pattern}")
+        
+        if config.git.exclude_patterns:
+            console.print(f"\n[bold]Exclude Patterns:[/bold]")
+            for pattern in config.git.exclude_patterns:
+                console.print(f"  • {pattern}")
+        
+    except FileNotFoundError:
+        console.print("[yellow]⚠️  No configuration file found.[/yellow]")
+        console.print("Run [bold]code-unc config init[/bold] to create a configuration.")
+    except Exception as e:
+        console.print(f"[red]❌ Error loading configuration: {e}[/red]")
+        console.print("Run [bold]code-unc config validate[/bold] to check your configuration.")
 
 
 @app.command("set")
@@ -168,12 +229,82 @@ def validate_config() -> None:
     """Validate current configuration."""
     console.print("[bold blue]Validating Configuration[/bold blue]\n")
     
-    with console.status("[bold green]Checking configuration..."):
-        import time
-        time.sleep(2)  # Simulate validation
-    
-    console.print("[green]✓[/green] Configuration is valid")
-    console.print("[yellow]⚠️ Validation logic not yet implemented[/yellow]")
+    try:
+        config_manager = ConfigManager()
+        config = config_manager.load_config()
+        
+        errors = []
+        warnings = []
+        
+        # Validate AI configuration
+        if not config.ai.provider:
+            errors.append("AI provider is not set")
+        elif config.ai.provider not in ['openai', 'anthropic', 'gemini', 'ollama']:
+            errors.append(f"Invalid AI provider: {config.ai.provider}")
+        
+        if not config.ai.model:
+            errors.append("AI model is not set")
+        
+        # Check API keys based on provider
+        if config.ai.provider == "openai" and not config.ai.openai_api_key:
+            errors.append("OpenAI API key is required for OpenAI provider")
+        elif config.ai.provider == "anthropic" and not config.ai.anthropic_api_key:
+            errors.append("Anthropic API key is required for Anthropic provider")
+        elif config.ai.provider == "gemini" and not config.ai.gemini_api_key:
+            errors.append("Gemini API key is required for Gemini provider")
+        
+        # Validate temperature range
+        if not (0.0 <= config.ai.temperature <= 2.0):
+            errors.append(f"Temperature must be between 0.0 and 2.0, got {config.ai.temperature}")
+        
+        # Validate max tokens
+        if config.ai.max_tokens <= 0:
+            errors.append(f"Max tokens must be positive, got {config.ai.max_tokens}")
+        elif config.ai.max_tokens > 32000:
+            warnings.append(f"Max tokens is very high ({config.ai.max_tokens}), may cause issues")
+        
+        # Validate output format
+        if config.output.format not in ['rich', 'json', 'markdown', 'html']:
+            errors.append(f"Invalid output format: {config.output.format}")
+        
+        # Validate severity threshold
+        if hasattr(config, 'review') and config.review:
+            if config.review.severity_threshold not in ['CRITICAL', 'HIGH', 'MEDIUM', 'LOW']:
+                errors.append(f"Invalid severity threshold: {config.review.severity_threshold}")
+        
+        # Display results
+        if errors:
+            console.print("[red]❌ Configuration validation failed![/red]\n")
+            console.print("[bold red]Errors:[/bold red]")
+            for error in errors:
+                console.print(f"  • {error}")
+        else:
+            console.print("[green]✓ Configuration is valid![/green]")
+        
+        if warnings:
+            console.print(f"\n[bold yellow]Warnings:[/bold yellow]")
+            for warning in warnings:
+                console.print(f"  • {warning}")
+        
+        # Configuration summary
+        console.print(f"\n[bold]Configuration Summary:[/bold]")
+        console.print(f"Provider: [blue]{config.ai.provider}[/blue]")
+        console.print(f"Model: [blue]{config.ai.model}[/blue]")
+        console.print(f"Config file: [dim]{config_manager.config_path}[/dim]")
+        
+        if errors:
+            raise typer.Exit(1)
+            
+    except FileNotFoundError:
+        console.print("[red]❌ Configuration file not found![/red]")
+        console.print("Run [bold]code-unc config init[/bold] to create a configuration.")
+    except ValidationError as e:
+        console.print("[red]❌ Configuration validation failed![/red]")
+        console.print(f"Validation errors: {e}")
+        raise typer.Exit(1)
+    except Exception as e:
+        console.print(f"[red]❌ Error validating configuration: {e}[/red]")
+        raise typer.Exit(1)
 
 
 if __name__ == "__main__":
