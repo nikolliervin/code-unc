@@ -1,92 +1,66 @@
-# Code Review CLI - Default Configuration
-# =====================================
+# Default configuration for AI Code Review CLI
+# Copy this file and customize for your needs
 
 # AI Provider Configuration
 ai:
-  provider: "openai"  # openai, anthropic
-  model: "gpt-4-turbo"  # gpt-4-turbo, gpt-4, gpt-3.5-turbo, claude-3-opus-20240229, etc.
-  api_key: null  # Set via environment variable or config command
-  api_base: null  # Custom API base URL if needed
-  temperature: 0.2  # Lower = more deterministic, higher = more creative
-  max_tokens: null  # Let the provider decide
-  timeout: 60  # Request timeout in seconds
-  max_requests_per_minute: 50  # Rate limiting
-  retry_attempts: 3  # Number of retries on failure
+  provider: "ollama"  # Options: openai, anthropic, gemini, ollama
+  model: "tinyllama"  # Model name - provider specific
+  temperature: 0.1    # 0.0 = deterministic, 1.0 = creative
+  max_tokens: 4000    # Maximum tokens to generate
+  
+  # OpenAI Settings (when provider = "openai")
+  openai_api_key: null  # Set via OPENAI_API_KEY environment variable
+  openai_base_url: null # Optional custom base URL
+  
+  # Anthropic Settings (when provider = "anthropic") 
+  anthropic_api_key: null  # Set via ANTHROPIC_API_KEY environment variable
+  
+  # Google Gemini Settings (when provider = "gemini")
+  gemini_api_key: null  # Set via GEMINI_API_KEY environment variable
+  gemini_base_url: null # Optional custom base URL
+  
+  # Ollama Settings (when provider = "ollama")
+  ollama_base_url: "http://localhost:11434"
+  ollama_model: "tinyllama"
+  
+  # Retry Configuration
+  max_retries: 3
+  retry_delay: 1.0
 
-# Git Operation Configuration  
-git:
-  default_target_branch: "main"  # Default branch to compare against
-  default_source_branch: null  # Use current branch if null
-  
-  # File filtering patterns
-  include_patterns:
-    - "*.py"      # Python
-    - "*.js"      # JavaScript
-    - "*.ts"      # TypeScript  
-    - "*.jsx"     # React JSX
-    - "*.tsx"     # TypeScript JSX
-    - "*.java"    # Java
-    - "*.c"       # C
-    - "*.cpp"     # C++
-    - "*.h"       # Header files
-    - "*.cs"      # C#
-    - "*.rb"      # Ruby
-    - "*.go"      # Go
-    - "*.rs"      # Rust
-    - "*.php"     # PHP
-    
-  exclude_patterns:
-    - "*.min.js"        # Minified JavaScript
-    - "*.min.css"       # Minified CSS
-    - "node_modules/*"  # Node.js dependencies
-    - "__pycache__/*"   # Python cache
-    - ".git/*"          # Git directory
-    - "*.pyc"           # Python bytecode
-    - "*.class"         # Java bytecode
-    - "dist/*"          # Distribution files
-    - "build/*"         # Build artifacts
-    - "vendor/*"        # Vendor dependencies
-    
-  # Limits to prevent excessive processing
-  max_files_per_review: 50   # Maximum files to review
-  max_file_size_kb: 500      # Maximum file size in KB
-  max_diff_lines: 1000       # Maximum diff lines per file
-  
-  # Git diff options
-  ignore_whitespace: true     # Ignore whitespace changes
-  ignore_binary_files: true  # Skip binary files
+# Review Configuration  
+review:
+  max_files: 50
+  include_patterns: []
+  exclude_patterns: 
+    - "*.log"
+    - "*.tmp"
+    - "node_modules/*"
+    - ".git/*"
+  focus_areas:
+    - "general"
+    - "security" 
+    - "performance"
+    - "style"
 
 # Output Configuration
 output:
-  default_format: "rich"     # rich, json, markdown, html
-  color_enabled: true        # Enable colored output
-  verbose: false             # Enable verbose logging
-  console_width: null        # Auto-detect console width
-  show_progress: true        # Show progress indicators
-  save_to_file: false        # Save output to file
-  output_directory: "./reviews"  # Directory for saved reviews
+  format: "rich"  # Options: rich, json, markdown, html
+  show_progress: true
+  show_metrics: true
+  show_suggestions: true
+  max_issues_display: 50
+  console_width: null  # Auto-detect if null
+  color_enabled: true
 
-# Caching Configuration
-cache:
-  enabled: true              # Enable caching for performance
-  cache_directory: "~/.cache/code-review-cli"  # Cache location
-  git_diff_ttl: 3600        # Git diff cache TTL (1 hour)
-  ai_response_ttl: 86400     # AI response cache TTL (24 hours)
-  max_cache_size_mb: 100     # Maximum cache size
-  cleanup_interval_hours: 24 # Cache cleanup frequency
-
-# Review Behavior Configuration
-review:
-  default_focus: "general"   # general, security, performance, style, bugs
-  auto_fix_suggestions: true # Generate code fix suggestions
-  include_explanations: true # Include detailed explanations
-  min_confidence: 0.7        # Minimum confidence for issues (0.0-1.0)
-  exclude_info_issues: false # Filter out info-level issues
+# Git Configuration
+git:
+  ignore_whitespace: false
+  ignore_binary: true
+  max_diff_size: 1000000  # 1MB limit
   
-  # Custom prompts for different focus areas
-  custom_prompts: {}
-
-# Global Settings
-debug: false           # Enable debug mode
-log_level: "INFO"      # DEBUG, INFO, WARNING, ERROR, CRITICAL
-config_version: "1.0"  # Configuration format version 
+# Cache Configuration  
+cache:
+  enabled: true
+  git_diff_ttl: 3600      # 1 hour
+  ai_response_ttl: 86400  # 24 hours
+  max_size_mb: 100        # Maximum cache size 
