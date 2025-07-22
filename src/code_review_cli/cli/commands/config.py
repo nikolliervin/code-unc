@@ -18,7 +18,7 @@ def init_config() -> None:
     console.print("[bold]AI Provider Configuration[/bold]")
     provider = Prompt.ask(
         "Choose AI provider",
-        choices=["openai", "anthropic"],
+        choices=["openai", "anthropic", "gemini", "ollama"],
         default="openai"
     )
     
@@ -29,12 +29,32 @@ def init_config() -> None:
             choices=["gpt-4-turbo", "gpt-4", "gpt-3.5-turbo"],
             default="gpt-4-turbo"
         )
-    else:
+    elif provider == "anthropic":
         api_key = Prompt.ask("Enter Anthropic API key", password=True)
         model = Prompt.ask(
             "Choose model",
             choices=["claude-3-opus-20240229", "claude-3-sonnet-20240229"],
             default="claude-3-sonnet-20240229"
+        )
+    elif provider == "gemini":
+        api_key = Prompt.ask("Enter Google Gemini API key", password=True)
+        model = Prompt.ask(
+            "Choose model",
+            choices=[
+                "gemini-2.5-flash",      # Latest, fastest, most cost-effective
+                "gemini-2.5-pro", 
+                "gemini-2.0-flash",
+                "gemini-1.5-flash", 
+                "gemini-1.5-pro", 
+                "gemini-1.0-pro"
+            ],
+            default="gemini-2.5-flash"
+        )
+    else:  # ollama
+        api_key = None
+        model = Prompt.ask(
+            "Enter Ollama model name",
+            default="codellama:7b"
         )
     
     console.print(f"\n[green]✓[/green] Configuration initialized!")
