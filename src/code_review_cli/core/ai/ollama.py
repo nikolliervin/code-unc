@@ -208,9 +208,18 @@ Please analyze this code and provide feedback in the following JSON format:
         """Estimate cost for Ollama (always 0 for local)."""
         return 0.0
     
-    async def get_token_count(self, text: str) -> int:
-        """Estimate token count (rough approximation)."""
-        return len(text.split()) * 1.3  # Rough approximation
+    def get_token_count(self, text: str) -> int:
+        """
+        Estimate token count for text.
+        
+        Args:
+            text: Text to count tokens for
+            
+        Returns:
+            Estimated token count
+        """
+        # Simple estimation: roughly 4 characters per token
+        return len(text) // 4
     
     async def test_connection(self) -> bool:
         """Test connection to Ollama."""

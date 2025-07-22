@@ -79,19 +79,10 @@ async def _run_review_async(
     
     try:
         # Load configuration
-        # If no config path specified, try to use our default config file
-        if config_path is None:
-            default_config_path = Path(__file__).parent.parent.parent.parent.parent / "configs" / "default.yaml"
-            print(f"DEBUG: Looking for default config at: {default_config_path}")
-            print(f"DEBUG: Default config exists: {default_config_path.exists()}")
-            if default_config_path.exists():
-                config_path = str(default_config_path)
-                print(f"DEBUG: Using default config: {config_path}")
-        
-        print(f"DEBUG: Final config_path: {config_path}")
         config_manager = ConfigManager(config_path)
         config = config_manager.load_config()
         print(f"DEBUG: Loaded config - provider: {config.ai.provider}, model: {config.ai.model}")
+        print(f"DEBUG: Config file: {config_manager.config_path}")
         
         # Determine focus area - use first focus or default to general
         focus_area = ReviewFocus.GENERAL
