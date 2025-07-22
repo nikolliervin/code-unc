@@ -1,6 +1,9 @@
 """Default configuration factory."""
 
-from ...models.config import Config
+from typing import Dict, Any, Optional
+from pathlib import Path
+
+from ...models.config import Config, AIConfig
 
 
 def get_default_config() -> Config:
@@ -39,4 +42,25 @@ def get_development_config() -> Config:
         log_level="DEBUG",
         output={"verbose": True, "show_progress": True},
         cache={"enabled": True, "git_diff_ttl": 60, "ai_response_ttl": 300},  # Short TTL for dev
+        ai=AIConfig(
+            provider="openai",  # Default to OpenAI
+            model="gpt-4",
+            temperature=0.1,
+            max_tokens=4000,
+            
+            # OpenAI settings
+            openai_api_key=None,  # Set via environment or config
+            openai_base_url=None,
+            
+            # Anthropic settings  
+            anthropic_api_key=None,
+            
+            # Gemini settings
+            gemini_api_key=None,
+            gemini_base_url=None,
+            
+            # Ollama settings
+            ollama_base_url="http://localhost:11434",
+            ollama_model="codellama:7b",
+        ),
     ) 
