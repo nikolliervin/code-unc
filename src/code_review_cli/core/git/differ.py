@@ -109,45 +109,56 @@ class GitDiffer:
             if ignore_whitespace:
                 diff_options.extend(["-w", "--ignore-all-space"])
             
-            # Use git.diff to get the diff between branches
+            # FUCK GitPython - just use raw git commands that actually work
             if source_branch == "HEAD" or source_branch == self.get_current_branch():
                 # Compare working tree with target branch
-                diff_index = self.repo.commit(target_branch).diff(None, *diff_options)
+                diff_output = self.repo.git.diff(target_branch, *diff_options)
             else:
                 # Compare two specific branches
-                diff_index = self.repo.commit(target_branch).diff(
-                    self.repo.commit(source_branch), *diff_options
-                )
+                diff_output = self.repo.git.diff(target_branch, source_branch, *diff_options)
             
-            # Parse diff items
+            print(f"DEBUG: Raw git diff length: {len(diff_output)} characters")
+            
+            # Get file list with status
+            if source_branch == "HEAD" or source_branch == self.get_current_branch():
+                name_status = self.repo.git.diff(target_branch, name_only=True)
+            else:
+                name_status = self.repo.git.diff(target_branch, source_branch, name_only=True)
+            
+            print(f"DEBUG: Changed files: {name_status}")
+            
+            # Create simple diff items from file list
             diff_files = []
             processed_files = 0
-            
-            for diff_item in diff_index:
-                if processed_files >= max_files:
-                    logger.warning(f"Reached maximum file limit ({max_files})")
-                    break
-                
-                # Skip binary files if requested
-                if ignore_binary and self._is_binary_file(diff_item):
-                    continue
-                
-                # Apply file filtering
-                file_path = self._get_file_path(diff_item)
-                if not self._should_include_file(
-                    file_path, include_patterns, exclude_patterns
-                ):
-                    continue
-                
-                # Parse the diff item
-                try:
-                    diff_file = self.parser.parse_diff_item(diff_item)
-                    if diff_file:
-                        diff_files.append(diff_file)
-                        processed_files += 1
-                except Exception as e:
-                    logger.warning(f"Failed to parse diff for {file_path}: {e}")
-                    continue
+            if name_status.strip():
+                for file_path in name_status.strip().split('\n'):
+                    if file_path.strip():
+                        print(f"DEBUG: Processing file: {file_path}")
+                        
+                        # Get file content for this specific file
+                        try:
+                            if source_branch == "HEAD" or source_branch == self.get_current_branch():
+                                file_diff = self.repo.git.diff(target_branch, '--', file_path)
+                            else:
+                                file_diff = self.repo.git.diff(target_branch, source_branch, '--', file_path)
+                            
+                            # Parse this into a DiffFile directly
+                            parsed_files = self.parser.parse_raw_diff(file_diff)
+                            if parsed_files:
+                                if isinstance(parsed_files, list):
+                                    diff_files.extend(parsed_files)
+                                else:
+                                    # If it returns a GitDiff object, get its files
+                                    diff_files.extend(parsed_files.files)
+                                processed_files += 1
+                                print(f"DEBUG: Successfully parsed: {file_path}")
+                            
+                        except Exception as e:
+                            print(f"DEBUG: Failed to get diff for {file_path}: {e}")
+                            continue
+                        
+                        if processed_files >= max_files:
+                            break
             
             # Create GitDiff object
             git_diff = GitDiff(

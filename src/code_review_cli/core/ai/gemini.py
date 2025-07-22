@@ -158,7 +158,7 @@ class GeminiClient(AIClient):
         
         url = f"{self.base_url}/models/{self.config.model}:generateContent"
         
-        for attempt in range(self.config.retry_attempts + 1):
+        for attempt in range(self.config.max_retries + 1):
             try:
                 headers = {
                     "Content-Type": "application/json",

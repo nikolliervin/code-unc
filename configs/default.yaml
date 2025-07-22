@@ -31,11 +31,6 @@ ai:
 review:
   max_files: 50
   include_patterns: []
-  exclude_patterns: 
-    - "*.log"
-    - "*.tmp"
-    - "node_modules/*"
-    - ".git/*"
   focus_areas:
     - "general"
     - "security" 
@@ -57,6 +52,74 @@ git:
   ignore_whitespace: false
   ignore_binary: true
   max_diff_size: 1000000  # 1MB limit
+  exclude_patterns:
+    # Build artifacts and dependencies
+    - "*.log"
+    - "*.tmp"
+    - "node_modules/*"
+    - ".git/*"
+    - "package-lock.json"
+    - "yarn.lock"
+    - "pnpm-lock.yaml"
+    - "*.lock"
+    
+    # Binary and asset files
+    - "*.exe"
+    - "*.dll"
+    - "*.so"
+    - "*.dylib"
+    - "*.bin"
+    - "*.ico"
+    - "*.svg"
+    - "*.png"
+    - "*.jpg"
+    - "*.jpeg"
+    - "*.gif"
+    - "*.bmp"
+    - "*.webp"
+    - "*.mp3"
+    - "*.mp4"
+    - "*.avi"
+    - "*.mov"
+    - "*.wav"
+    - "*.flac"
+    
+    # Configuration and script files
+    - "*.bat"
+    - "*.cmd"
+    - "*.sh"
+    - "*.ps1"
+    - "*.yml"
+    - "*.yaml"
+    - "*.toml"
+    - "*.ini"
+    - "*.cfg"
+    - "*.conf"
+    - ".env*"
+    - "*.env"
+    
+    # IDE and editor files
+    - ".vscode/*"
+    - ".idea/*"
+    - "*.swp"
+    - "*.swo"
+    - "*~"
+    - ".DS_Store"
+    - "Thumbs.db"
+    
+    # Documentation
+    - "*.md"
+    - "*.txt"
+    - "*.pdf"
+    - "*.doc"
+    - "*.docx"
+    
+    # Archive files
+    - "*.zip"
+    - "*.tar"
+    - "*.gz"
+    - "*.rar"
+    - "*.7z"
   
 # Cache Configuration  
 cache:

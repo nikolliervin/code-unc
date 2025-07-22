@@ -32,6 +32,7 @@ class AIConfig(BaseModel):
     # Retry settings
     max_retries: int = Field(default=3, description="Maximum retry attempts")
     retry_delay: float = Field(default=1.0, description="Delay between retries in seconds")
+    timeout: float = Field(default=60.0, description="Request timeout in seconds")
     
     @validator('provider')
     def validate_provider(cls, v):

@@ -93,7 +93,7 @@ class AIClient(ABC):
     def prepare_diff_context(
         self,
         diff: GitDiff,
-        max_context_size: int = 8000,
+        max_context_size: int = 50000,
     ) -> str:
         """
         Prepare diff context for AI analysis.
@@ -220,9 +220,10 @@ class AIClient(ABC):
             Rate limit information
         """
         return {
-            "max_requests_per_minute": self.config.max_requests_per_minute,
-            "retry_attempts": self.config.retry_attempts,
-            "timeout": self.config.timeout,
+            "max_retries": self.config.max_retries,
+            "retry_delay": self.config.retry_delay,
+            "model": self.config.model,
+            "provider": self.config.provider,
         }
     
     def get_model_info(self) -> Dict[str, Any]:
@@ -237,4 +238,4 @@ class AIClient(ABC):
             "model": self.config.model,
             "temperature": self.config.temperature,
             "max_tokens": self.config.max_tokens,
-        } 
+        }

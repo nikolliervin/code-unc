@@ -22,7 +22,8 @@ from ...core.output.console import ReviewConsole
 from ...models import ReviewRequest, ReviewResult, ReviewFocus
 from ...models.diff import GitDiff
 from ...models.review import ReviewMetrics, IssueSeverity
-from ...models.issue import Issue, IssueCategory
+from ...models.issue import Issue, IssueLocation, IssueCategory
+from ...models.review import ReviewStatus
 
 logger = logging.getLogger(__name__)
 console = Console()
@@ -135,17 +136,30 @@ async def _run_review_async(
                 if len(filtered_files) >= max_files:
                     break
                     
-                # Check include patterns
+                # Check include patterns (CLI args)
                 if include and not any(file.path.endswith(pattern.lstrip('*')) for pattern in include):
                     continue
                     
-                # Check exclude patterns
+                # Check exclude patterns (CLI args)
                 if exclude and any(file.path.endswith(pattern.lstrip('*')) for pattern in exclude):
                     continue
+                
+                # Check git config exclude patterns
+                git_exclude_patterns = config.git.exclude_patterns
+                if git_exclude_patterns:
+                    import fnmatch
+                    if any(fnmatch.fnmatch(file.path, pattern) for pattern in git_exclude_patterns):
+                        print(f"DEBUG: Excluding file due to git config pattern: {file.path}")
+                        continue
                     
                 filtered_files.append(file)
             
             diff.files = filtered_files
+            print(f"DEBUG: Files being sent to AI ({len(filtered_files)}): {[f.path for f in filtered_files]}")
+            
+            if not filtered_files:
+                console.print("[yellow]⚠️ No files to review after filtering. Use --include-all to include more files.[/yellow]")
+                return
             
             progress.update(task, description="Initializing AI client...")
             
@@ -215,7 +229,7 @@ async def _run_review_async(
                 # Create review result
                 result = ReviewResult(
                     id=str(uuid.uuid4()),
-                    status="completed",
+                    status=ReviewStatus.COMPLETED,
                     request=request,
                     diff=diff,
                     issues=issues,
@@ -224,8 +238,15 @@ async def _run_review_async(
                         critical_issues=len([i for i in issues if i.severity == IssueSeverity.CRITICAL]),
                         high_issues=len([i for i in issues if i.severity == IssueSeverity.HIGH]),
                         medium_issues=len([i for i in issues if i.severity == IssueSeverity.MEDIUM]),
-                        low_issues=len([i for i in issues if i.severity == IssueSeverity.LOW])
-                    )
+                        low_issues=len([i for i in issues if i.severity == IssueSeverity.LOW]),
+                        info_issues=len([i for i in issues if i.severity == IssueSeverity.INFO]),
+                        files_reviewed=len(diff.files) if diff else 0,
+                        lines_added=sum(f.stats.additions for f in diff.files) if diff else 0,
+                        lines_deleted=sum(f.stats.deletions for f in diff.files) if diff else 0,
+                    ),
+                    created_at=datetime.utcnow(),
+                    ai_provider_used=config.ai.provider,
+                    ai_model_used=config.ai.model,
                 )
                 
                 progress.update(task, description="Formatting results...")
@@ -315,6 +336,9 @@ def clear_history():
 def _parse_ai_response(response_text: str, diff: GitDiff) -> List[Issue]:
     """Parse AI response into structured issues."""
     import json
+    import uuid
+    from code_review_cli.models.issue import Issue, IssueLocation, IssueSeverity, IssueCategory
+    
     issues = []
     
     try:
@@ -328,16 +352,31 @@ def _parse_ai_response(response_text: str, diff: GitDiff) -> List[Issue]:
             
             for issue_data in data.get("issues", []):
                 try:
+                    # Handle both old and new field formats
+                    file_path = issue_data.get("file_path") or issue_data.get("file", "")
+                    line_start = issue_data.get("line_start") or issue_data.get("line", 0)
+                    
+                    # Create proper IssueLocation
+                    location = IssueLocation(
+                        file_path=file_path,
+                        line_start=line_start,
+                        line_end=issue_data.get("line_end"),
+                        column_start=issue_data.get("column_start"),
+                        column_end=issue_data.get("column_end")
+                    )
+                    
                     issue = Issue(
-                        severity=IssueSeverity(issue_data.get("severity", "MEDIUM")),
-                        category=IssueCategory(issue_data.get("category", "CODE_STYLE")),
+                        id=str(uuid.uuid4()),
                         title=issue_data.get("title", "Code review issue"),
                         description=issue_data.get("description", ""),
-                        location={
-                            "file": issue_data.get("file", ""),
-                            "line": issue_data.get("line", 0)
-                        },
-                        suggestion=issue_data.get("suggestion", "")
+                        severity=IssueSeverity(issue_data.get("severity", "MEDIUM")),
+                        category=IssueCategory(issue_data.get("category", "MAINTAINABILITY")),
+                        location=location,
+                        code_snippet=issue_data.get("code_snippet"),
+                        suggested_fix=issue_data.get("suggested_fix") or issue_data.get("suggestion", ""),
+                        confidence=issue_data.get("confidence", 1.0),
+                        tags=issue_data.get("tags", []),
+                        references=issue_data.get("references", [])
                     )
                     issues.append(issue)
                 except Exception as e:
@@ -347,12 +386,13 @@ def _parse_ai_response(response_text: str, diff: GitDiff) -> List[Issue]:
         logger.error(f"Failed to parse AI response: {e}")
         # Fallback: create a generic issue
         issues.append(Issue(
-            severity=IssueSeverity.MEDIUM,
-            category=IssueCategory.CODE_STYLE,
+            id=str(uuid.uuid4()),
             title="AI Response Parse Error",
             description=f"Could not parse AI response: {response_text[:200]}...",
-            location={"file": "", "line": 0},
-            suggestion="Check the AI response format"
+            severity=IssueSeverity.MEDIUM,
+            category=IssueCategory.MAINTAINABILITY,
+            location=IssueLocation(file_path="", line_start=0),
+            suggested_fix="Check the AI response format"
         ))
     
     return issues
