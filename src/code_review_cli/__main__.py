@@ -1,4 +1,4 @@
-"""Main entry point for code-unc CLI when run as a module."""
+"""Main entry point for unc CLI when run as a module."""
 
 from code_review_cli.cli.main import app
 

@@ -153,6 +153,9 @@ def show_config() -> None:
         table.add_row("Model", config.ai.model)
         table.add_row("Temperature", str(config.ai.temperature))
         table.add_row("Max Tokens", str(config.ai.max_tokens))
+        table.add_row("Max Retries", str(config.ai.max_retries))
+        table.add_row("Retry Delay", f"{config.ai.retry_delay}s")
+        table.add_row("Timeout", f"{config.ai.timeout}s")
         
         # Show API key status (hidden for security)
         if config.ai.provider == "openai" and config.ai.openai_api_key:
@@ -161,8 +164,11 @@ def show_config() -> None:
             table.add_row("Anthropic API Key", "••••••••" + config.ai.anthropic_api_key[-4:] if len(config.ai.anthropic_api_key) > 4 else "••••••••")
         elif config.ai.provider == "gemini" and config.ai.gemini_api_key:
             table.add_row("Gemini API Key", "••••••••" + config.ai.gemini_api_key[-4:] if len(config.ai.gemini_api_key) > 4 else "••••••••")
-        elif config.ai.provider == "ollama":
+        
+        # Show Ollama settings regardless of provider (since they're in your config)
+        if config.ai.ollama_base_url:
             table.add_row("Ollama URL", config.ai.ollama_base_url)
+        if config.ai.ollama_model:
             table.add_row("Ollama Model", config.ai.ollama_model)
         
         # Git Configuration
@@ -175,6 +181,7 @@ def show_config() -> None:
         table.add_row("Output Format", config.output.format)
         table.add_row("Show Progress", "Yes" if config.output.show_progress else "No")
         table.add_row("Show Metrics", "Yes" if config.output.show_metrics else "No")
+        table.add_row("Show Suggestions", "Yes" if config.output.show_suggestions else "No")
         table.add_row("Max Issues Display", str(config.output.max_issues_display))
         table.add_row("Color Enabled", "Yes" if config.output.color_enabled else "No")
         
@@ -182,6 +189,7 @@ def show_config() -> None:
         table.add_row("Cache Enabled", "Yes" if config.cache.enabled else "No")
         table.add_row("Cache TTL", f"{config.cache.ttl_hours} hours")
         table.add_row("Cache Max Size", f"{config.cache.max_size_mb} MB")
+        table.add_row("Cache Cleanup Interval", f"{config.cache.cleanup_interval_hours} hours")
         
         # Review Configuration
         if hasattr(config, 'review') and config.review:
@@ -195,23 +203,73 @@ def show_config() -> None:
         config_path = config_manager.config_path
         console.print(f"\n[dim]Config file: {config_path}[/dim]")
         
-        # Show file patterns if any
+        # Show file patterns
+        console.print(f"\n[bold]Include Patterns:[/bold]")
         if config.git.include_patterns:
-            console.print(f"\n[bold]Include Patterns:[/bold]")
             for pattern in config.git.include_patterns:
                 console.print(f"  • {pattern}")
+        else:
+            console.print("  • (none)")
         
+        console.print(f"\n[bold]Exclude Patterns:[/bold]")
         if config.git.exclude_patterns:
-            console.print(f"\n[bold]Exclude Patterns:[/bold]")
             for pattern in config.git.exclude_patterns:
                 console.print(f"  • {pattern}")
+        else:
+            console.print("  • (none)")
+        
+        # Show focus areas
+        if hasattr(config, 'review') and config.review:
+            console.print(f"\n[bold]Default Focus Areas:[/bold]")
+            if config.review.default_focus:
+                for focus in config.review.default_focus:
+                    console.print(f"  • {focus}")
+            else:
+                console.print("  • (none)")
         
     except FileNotFoundError:
         console.print("[yellow]⚠️  No configuration file found.[/yellow]")
-        console.print("Run [bold]code-unc config init[/bold] to create a configuration.")
+        console.print("Run [bold]unc config init[/bold] to create a configuration.")
     except Exception as e:
         console.print(f"[red]❌ Error loading configuration: {e}[/red]")
-        console.print("Run [bold]code-unc config validate[/bold] to check your configuration.")
+        console.print("Run [bold]unc config validate[/bold] to check your configuration.")
+
+
+@app.command("raw")
+def show_raw_config() -> None:
+    """Show raw YAML configuration."""
+    console.print("[bold blue]Raw Configuration (YAML)[/bold blue]\n")
+    
+    try:
+        config_manager = ConfigManager()
+        config = config_manager.load_config()
+        
+        # Convert config to dict and display as YAML
+        import yaml
+        config_dict = config.dict()
+        
+        # Remove sensitive data
+        if 'ai' in config_dict:
+            if 'openai_api_key' in config_dict['ai'] and config_dict['ai']['openai_api_key']:
+                config_dict['ai']['openai_api_key'] = '••••••••' + config_dict['ai']['openai_api_key'][-4:]
+            if 'anthropic_api_key' in config_dict['ai'] and config_dict['ai']['anthropic_api_key']:
+                config_dict['ai']['anthropic_api_key'] = '••••••••' + config_dict['ai']['anthropic_api_key'][-4:]
+            if 'gemini_api_key' in config_dict['ai'] and config_dict['ai']['gemini_api_key']:
+                config_dict['ai']['gemini_api_key'] = '••••••••' + config_dict['ai']['gemini_api_key'][-4:]
+        
+        yaml_str = yaml.dump(config_dict, default_flow_style=False, sort_keys=False, indent=2)
+        console.print(f"[code]{yaml_str}[/code]")
+        
+        # Show config file location
+        config_path = config_manager.config_path
+        console.print(f"\n[dim]Config file: {config_path}[/dim]")
+        
+    except FileNotFoundError:
+        console.print("[yellow]⚠️  No configuration file found.[/yellow]")
+        console.print("Run [bold]unc config init[/bold] to create a configuration.")
+    except Exception as e:
+        console.print(f"[red]❌ Error loading configuration: {e}[/red]")
+        console.print("Run [bold]unc config validate[/bold] to check your configuration.")
 
 
 @app.command("set")
@@ -297,7 +355,7 @@ def validate_config() -> None:
             
     except FileNotFoundError:
         console.print("[red]❌ Configuration file not found![/red]")
-        console.print("Run [bold]code-unc config init[/bold] to create a configuration.")
+        console.print("Run [bold]unc config init[/bold] to create a configuration.")
     except ValidationError as e:
         console.print("[red]❌ Configuration validation failed![/red]")
         console.print(f"Validation errors: {e}")

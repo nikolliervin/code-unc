@@ -33,7 +33,7 @@ class ConfigManager:
     def _get_default_config_path(self) -> Path:
         """Get default configuration file path."""
         # Follow XDG Base Directory Specification
-        config_dir = Path.home() / ".config" / "code-review-cli"
+        config_dir = Path.home() / ".config" / "unc"
         config_dir.mkdir(parents=True, exist_ok=True)
         return config_dir / "config.yaml"
     
