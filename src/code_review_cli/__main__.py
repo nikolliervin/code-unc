@@ -1,6 +1,6 @@
-"""Main entry point for code-review CLI when run as a module."""
+"""Main entry point for code-unc CLI when run as a module."""
 
-from .cli.main import app
+from code_review_cli.cli.main import app
 
 if __name__ == "__main__":
     app() 

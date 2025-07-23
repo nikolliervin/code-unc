@@ -82,8 +82,6 @@ async def _run_review_async(
         # Load configuration
         config_manager = ConfigManager(config_path)
         config = config_manager.load_config()
-        print(f"DEBUG: Loaded config - provider: {config.ai.provider}, model: {config.ai.model}")
-        print(f"DEBUG: Config file: {config_manager.config_path}")
         
         # Determine focus area - use first focus or default to general
         focus_area = ReviewFocus.GENERAL
@@ -125,9 +123,6 @@ async def _run_review_async(
                 source_branch=request.source_branch
             )
             
-            print(f"DEBUG: diff type: {type(diff)}")
-            print(f"DEBUG: diff files count: {len(diff.files)}")
-            
             progress.update(task, description="Filtering files...")
             
             # Filter files based on patterns
@@ -149,13 +144,11 @@ async def _run_review_async(
                 if git_exclude_patterns:
                     import fnmatch
                     if any(fnmatch.fnmatch(file.path, pattern) for pattern in git_exclude_patterns):
-                        print(f"DEBUG: Excluding file due to git config pattern: {file.path}")
                         continue
                     
                 filtered_files.append(file)
             
             diff.files = filtered_files
-            print(f"DEBUG: Files being sent to AI ({len(filtered_files)}): {[f.path for f in filtered_files]}")
             
             if not filtered_files:
                 console.print("[yellow]⚠️ No files to review after filtering. Use --include-all to include more files.[/yellow]")
@@ -164,8 +157,6 @@ async def _run_review_async(
             progress.update(task, description="Initializing AI client...")
             
             # Initialize AI client based on config
-            print(f"DEBUG: AI provider from config: {config.ai.provider}")
-            print(f"DEBUG: AI model from config: {config.ai.model}")
             ai_client = _create_ai_client(config)
             
             # Test connection

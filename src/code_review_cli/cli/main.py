@@ -10,8 +10,8 @@ console = Console()
 
 # Create main Typer application
 app = typer.Typer(
-    name="code-review",
-    help="AI-powered code review tool using git diff and OpenAI/Anthropic",
+    name="code-unc",
+    help="AI-powered code review tool using git diff and various AI providers",
     no_args_is_help=True,
     rich_markup_mode="rich",
 )
@@ -28,9 +28,9 @@ def main(
     verbose: bool = typer.Option(False, "--verbose", "-V", help="Enable verbose output"),
     config_path: str = typer.Option(None, "--config", "-c", help="Path to configuration file"),
 ):
-    """AI-powered code review tool using git diff and OpenAI/Anthropic."""
+    """AI-powered code review tool using git diff and various AI providers."""
     if version:
-        console.print(f"code-review version {__version__}")
+        console.print(f"code-unc version {__version__}")
         raise typer.Exit()
 
 

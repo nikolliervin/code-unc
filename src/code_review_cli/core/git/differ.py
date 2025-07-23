@@ -117,15 +117,11 @@ class GitDiffer:
                 # Compare two specific branches
                 diff_output = self.repo.git.diff(target_branch, source_branch, *diff_options)
             
-            print(f"DEBUG: Raw git diff length: {len(diff_output)} characters")
-            
             # Get file list with status
             if source_branch == "HEAD" or source_branch == self.get_current_branch():
                 name_status = self.repo.git.diff(target_branch, name_only=True)
             else:
                 name_status = self.repo.git.diff(target_branch, source_branch, name_only=True)
-            
-            print(f"DEBUG: Changed files: {name_status}")
             
             # Create simple diff items from file list
             diff_files = []
@@ -133,8 +129,6 @@ class GitDiffer:
             if name_status.strip():
                 for file_path in name_status.strip().split('\n'):
                     if file_path.strip():
-                        print(f"DEBUG: Processing file: {file_path}")
-                        
                         # Get file content for this specific file
                         try:
                             if source_branch == "HEAD" or source_branch == self.get_current_branch():
@@ -151,10 +145,9 @@ class GitDiffer:
                                     # If it returns a GitDiff object, get its files
                                     diff_files.extend(parsed_files.files)
                                 processed_files += 1
-                                print(f"DEBUG: Successfully parsed: {file_path}")
                             
                         except Exception as e:
-                            print(f"DEBUG: Failed to get diff for {file_path}: {e}")
+                            logger.debug(f"Failed to get diff for {file_path}: {e}")
                             continue
                         
                         if processed_files >= max_files:
