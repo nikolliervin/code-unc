@@ -58,12 +58,12 @@ dev = [
 ]
 
 [project.scripts]
-code-unc = "code_review_cli.cli.main:app"
+unc = "code_review_cli.cli.main:app"
 
 [project.urls]
-Homepage = "https://github.com/your-org/code-review-cli"
-Repository = "https://github.com/your-org/code-review-cli"
-Issues = "https://github.com/your-org/code-review-cli/issues"
+Homepage = "https://github.com/nikolliervin/code-unc"
+Repository = "https://github.com/nikolliervin/code-unc"
+Issues = "https://github.com/nikolliervin/code-unc/issues"
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/code_review_cli"]
