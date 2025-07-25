@@ -17,6 +17,7 @@ Welcome to the UNC documentation! UNC is an AI-powered code review tool using gi
 
 ### Examples & Tutorials
 - **[Examples](examples.md)** - Common usage examples
+- **[GitHub Integration](github-integration.md)** - Automate PR reviews with GitHub Actions
 - **[Troubleshooting](troubleshooting.md)** - Common issues and solutions
 
 ### Development
