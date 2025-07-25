@@ -21,4 +21,7 @@ Jinja2>=3.1.0
 
 # Async support
 aiohttp>=3.8.0
-aiofiles>=23.0.0 
+aiofiles>=23.0.0
+
+# GitHub Actions support
+requests>=2.28.0 
