@@ -176,14 +176,15 @@ class GeminiClient(AIClient):
                     if response.status == 200:
                         return response_data
                     elif response.status == 429:  # Rate limit
-                        if attempt < self.config.retry_attempts:
+                        if attempt < self.config.max_retries:
                             wait_time = 2 ** attempt  # Exponential backoff
                             logger.warning(f"Rate limit hit, retrying in {wait_time}s (attempt {attempt + 1})")
                             await asyncio.sleep(wait_time)
                             continue
-                        raise Exception(f"Rate limit exceeded after {self.config.retry_attempts} retries")
+                        else:
+                            raise Exception(f"Rate limit exceeded after {self.config.max_retries} retries")
                     elif response.status >= 500:  # Server error
-                        if attempt < self.config.retry_attempts:
+                        if attempt < self.config.max_retries:
                             wait_time = 2 ** attempt
                             logger.warning(f"Server error {response.status}, retrying in {wait_time}s (attempt {attempt + 1})")
                             await asyncio.sleep(wait_time)
@@ -194,14 +195,14 @@ class GeminiClient(AIClient):
                         raise Exception(f"API error: {error_msg}")
                         
             except asyncio.TimeoutError:
-                if attempt < self.config.retry_attempts:
+                if attempt < self.config.max_retries:
                     wait_time = 2 ** attempt
                     logger.warning(f"Timeout, retrying in {wait_time}s (attempt {attempt + 1})")
                     await asyncio.sleep(wait_time)
                     continue
                 raise Exception("Request timeout")
             except aiohttp.ClientError as e:
-                if attempt < self.config.retry_attempts:
+                if attempt < self.config.max_retries:
                     wait_time = 2 ** attempt
                     logger.warning(f"Client error {e}, retrying in {wait_time}s (attempt {attempt + 1})")
                     await asyncio.sleep(wait_time)
