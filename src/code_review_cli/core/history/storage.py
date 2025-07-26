@@ -197,10 +197,10 @@ class HistoryStorage:
     
     def get_review_by_id(self, review_id: str) -> Optional[Dict[str, Any]]:
         """
-        Get a specific review by ID.
+        Get a specific review by ID (supports partial ID matching).
         
         Args:
-            review_id: Review ID to retrieve
+            review_id: Review ID to retrieve (full or partial)
             
         Returns:
             Review data or None if not found
@@ -210,6 +210,7 @@ class HistoryStorage:
             
         try:
             with self._get_connection() as conn:
+                # First try exact match
                 cursor = conn.execute("""
                     SELECT * FROM review_history WHERE id = ?
                 """, (review_id,))
@@ -217,6 +218,20 @@ class HistoryStorage:
                 row = cursor.fetchone()
                 if row:
                     return dict(row)
+                
+                # If no exact match, try partial match (ID starts with given string)
+                cursor = conn.execute("""
+                    SELECT * FROM review_history WHERE id LIKE ? ORDER BY created_at DESC
+                """, (f"{review_id}%",))
+                
+                rows = cursor.fetchall()
+                if len(rows) == 1:
+                    # Single match found
+                    return dict(rows[0])
+                elif len(rows) > 1:
+                    # Multiple matches found, need to be more specific
+                    logger.warning(f"Multiple reviews match '{review_id}'. Please use a more specific ID.")
+                    return None
                     
                 return None
                 

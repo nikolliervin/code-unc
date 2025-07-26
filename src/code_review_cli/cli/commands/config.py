@@ -195,6 +195,14 @@ def show_config() -> None:
         table.add_row("Cache Max Size", f"{config.cache.max_size_mb} MB")
         table.add_row("Cache Cleanup Interval", f"{config.cache.cleanup_interval_hours} hours")
         
+        # History Configuration
+        table.add_row("History Enabled", "Yes" if config.history.enabled else "No")
+        if config.history.enabled:
+            table.add_row("History Max Entries", str(config.history.max_entries))
+            table.add_row("History Retention", f"{config.history.retention_days} days")
+            if config.history.storage_path:
+                table.add_row("History Storage Path", config.history.storage_path)
+        
         # Review Configuration
         if hasattr(config, 'review') and config.review:
             table.add_row("Severity Threshold", config.review.severity_threshold)
@@ -285,7 +293,74 @@ def set_config(
 ) -> None:
     """Set configuration value."""
     console.print(f"Setting [cyan]{key}[/cyan] to [magenta]{value}[/magenta]")
-    console.print("[yellow]⚠️ Configuration setting not yet implemented[/yellow]")
+    
+    try:
+        config_manager = ConfigManager()
+        config = config_manager.load_config()
+        
+        # Parse the key to get the section and setting
+        key_parts = key.split('.')
+        if len(key_parts) != 2:
+            console.print("[red]❌ Invalid key format. Use format: section.setting (e.g., ai.provider)[/red]")
+            return
+        
+        section, setting = key_parts
+        
+        # Convert value to appropriate type
+        converted_value = _convert_value(value)
+        
+        # Set the configuration value
+        if section == "ai":
+            setattr(config.ai, setting, converted_value)
+        elif section == "git":
+            setattr(config.git, setting, converted_value)
+        elif section == "output":
+            setattr(config.output, setting, converted_value)
+        elif section == "cache":
+            setattr(config.cache, setting, converted_value)
+        elif section == "history":
+            setattr(config.history, setting, converted_value)
+        elif section == "review":
+            setattr(config.review, setting, converted_value)
+        else:
+            console.print(f"[red]❌ Unknown configuration section: {section}[/red]")
+            console.print("Available sections: ai, git, output, cache, history, review")
+            return
+        
+        # Save the updated configuration
+        config_path = config_manager.save_config(config)
+        console.print(f"[green]✓ Configuration updated successfully![/green]")
+        console.print(f"Config saved to: [blue]{config_path}[/blue]")
+        
+    except AttributeError as e:
+        console.print(f"[red]❌ Invalid configuration setting: {setting}[/red]")
+        console.print(f"Error: {e}")
+    except Exception as e:
+        console.print(f"[red]❌ Failed to update configuration: {e}[/red]")
+
+
+def _convert_value(value: str):
+    """Convert string value to appropriate type."""
+    # Boolean conversion
+    if value.lower() in ('true', 'yes', '1', 'on'):
+        return True
+    elif value.lower() in ('false', 'no', '0', 'off'):
+        return False
+    
+    # Integer conversion
+    try:
+        return int(value)
+    except ValueError:
+        pass
+    
+    # Float conversion
+    try:
+        return float(value)
+    except ValueError:
+        pass
+    
+    # Return as string
+    return value
 
 
 @app.command("validate")

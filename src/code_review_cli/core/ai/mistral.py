@@ -6,8 +6,7 @@ import json
 from typing import Dict, Any, Optional
 
 from mistralai import Mistral as MistralSDK
-from mistralai.models.sdkerror import SDKError
-from mistralai.models.httperrors import HTTPError
+from mistralai import SDKError
 
 from .client import AIClient, AIResponse
 from ...models.review import ReviewRequest
@@ -143,21 +142,21 @@ class MistralClient(AIClient):
                 response = await self.client.chat.complete_async(**api_params)
                 return response
                 
-            except HTTPError as e:
-                if e.status_code == 429:  # Rate limit error
-                    if attempt < self.config.retry_attempts:
-                        wait_time = 2 ** attempt  # Exponential backoff
-                        logger.warning(f"Rate limit hit, retrying in {wait_time}s (attempt {attempt + 1})")
-                        await asyncio.sleep(wait_time)
-                        continue
-                raise
-                
             except SDKError as e:
-                if attempt < self.config.retry_attempts and hasattr(e, 'status_code') and e.status_code >= 500:
-                    wait_time = 2 ** attempt
-                    logger.warning(f"Server error, retrying in {wait_time}s (attempt {attempt + 1})")
-                    await asyncio.sleep(wait_time)
-                    continue
+                # Handle rate limiting and retryable errors
+                if hasattr(e, 'status_code'):
+                    if e.status_code == 429:  # Rate limit error
+                        if attempt < self.config.retry_attempts:
+                            wait_time = 2 ** attempt  # Exponential backoff
+                            logger.warning(f"Rate limit hit, retrying in {wait_time}s (attempt {attempt + 1})")
+                            await asyncio.sleep(wait_time)
+                            continue
+                    elif e.status_code >= 500:  # Server error
+                        if attempt < self.config.retry_attempts:
+                            wait_time = 2 ** attempt
+                            logger.warning(f"Server error, retrying in {wait_time}s (attempt {attempt + 1})")
+                            await asyncio.sleep(wait_time)
+                            continue
                 raise
     
     def estimate_cost(

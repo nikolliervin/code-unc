@@ -17,6 +17,7 @@ app = typer.Typer()
 def list_history(
     limit: int = typer.Option(10, "--limit", "-l", help="Number of reviews to show"),
     format: str = typer.Option("table", "--format", "-f", help="Output format (table, json)"),
+    full_ids: bool = typer.Option(False, "--full-ids", help="Show complete review IDs"),
 ) -> None:
     """List review history."""
     try:
@@ -61,8 +62,11 @@ def list_history(
                 
                 date_str = created_at.strftime("%Y-%m-%d %H:%M") if isinstance(created_at, datetime) else str(created_at)
                 
-                # Truncate ID for display
-                short_id = review['id'][:8] + "..." if len(review['id']) > 8 else review['id']
+                # Show ID based on full_ids option
+                
+                short_id = review['id']
+                # else:
+                #     short_id = review['id'][:12] + "..." if len(review['id']) > 12 else review['id']
                 
                 # Status with emoji
                 status = review['status']
@@ -114,7 +118,8 @@ def show_review(
         
         if not review_data:
             console.print(f"[red]❌ Review not found: {review_id}[/red]")
-            console.print("Use 'unc history list' to see available reviews.")
+            console.print("Use '[cyan]unc history list[/cyan]' to see available reviews.")
+            console.print("Use '[cyan]unc history list --full-ids[/cyan]' to see complete IDs.")
             return
         
         console.print(f"[bold blue]Review Details: {review_id}[/bold blue]\n")
