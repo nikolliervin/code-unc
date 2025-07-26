@@ -82,6 +82,13 @@ cache:
   git_diff_ttl: 3600      # 1 hour
   ai_response_ttl: 86400  # 24 hours
   max_size_mb: 100        # Maximum cache size
+
+# History Configuration
+history:
+  enabled: false          # Enable/disable review history tracking (disabled by default)
+  max_entries: 1000       # Maximum number of reviews to keep
+  retention_days: 30      # Days to keep history entries
+  storage_path: null      # Custom storage path (defaults to ~/.config/unc/history)
 ```
 
 ## Configuration Commands
@@ -110,6 +117,12 @@ unc config set ai.model "gpt-4"
 
 # Set output format
 unc config set output.format json
+
+# Enable history tracking
+unc config set history.enabled true
+
+# Set history retention (optional)
+unc config set history.retention_days 60
 ```
 
 ### Validate Configuration
@@ -176,6 +189,31 @@ ai:
   max_tokens: 4000
   ollama_base_url: "http://localhost:11434"
   ollama_model: "codellama:7b"
+```
+
+### History Configuration Examples
+
+#### Enable History Tracking
+```yaml
+history:
+  enabled: true           # Turn on history tracking
+  max_entries: 1000       # Keep last 1000 reviews
+  retention_days: 30      # Keep for 30 days
+```
+
+#### Custom History Storage
+```yaml
+history:
+  enabled: true
+  max_entries: 500
+  retention_days: 14
+  storage_path: "/custom/path/to/history"  # Custom location
+```
+
+#### Disable History (Default)
+```yaml
+history:
+  enabled: false          # No history tracking
 ```
 
 ## Next Steps
