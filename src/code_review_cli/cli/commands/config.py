@@ -57,6 +57,18 @@ def init_config() -> None:
             ],
             default="gemini-2.5-flash"
         )
+    elif provider == "mistral":
+        api_key = Prompt.ask("Enter Mistral API key", password=True)
+        model = Prompt.ask(
+            "Choose model",
+            choices=[
+                "mistral-large-latest",
+                "mistral-medium-latest", 
+                "mistral-small-latest",
+                "codestral-latest"
+            ],
+            default="mistral-large-latest"
+        )
     else:  # ollama
         api_key = None
         model = Prompt.ask(
