@@ -9,7 +9,7 @@ from pydantic import BaseModel, Field, validator
 class AIConfig(BaseModel):
     """AI provider configuration."""
     
-    provider: str = Field(default="openai", description="AI provider: openai, anthropic, ollama, gemini")
+    provider: str = Field(default="openai", description="AI provider: openai, anthropic, mistral, ollama, gemini")
     model: str = Field(default="gpt-4", description="Model name")
     temperature: float = Field(default=0.1, ge=0.0, le=2.0, description="Temperature for generation")
     max_tokens: int = Field(default=4000, ge=1, le=32000, description="Maximum tokens to generate")
@@ -20,6 +20,9 @@ class AIConfig(BaseModel):
     
     # Anthropic specific
     anthropic_api_key: Optional[str] = Field(default=None, description="Anthropic API key")
+    
+    # Mistral specific
+    mistral_api_key: Optional[str] = Field(default=None, description="Mistral API key")
     
     # Gemini specific
     gemini_api_key: Optional[str] = Field(default=None, description="Google Gemini API key")
@@ -36,8 +39,8 @@ class AIConfig(BaseModel):
     
     @validator('provider')
     def validate_provider(cls, v):
-        if v not in ['openai', 'anthropic', 'ollama', 'gemini']:
-            raise ValueError('Provider must be one of: openai, anthropic, ollama, gemini')
+        if v not in ['openai', 'anthropic', 'mistral', 'ollama', 'gemini']:
+            raise ValueError('Provider must be one of: openai, anthropic, mistral, ollama, gemini')
         return v
 
 

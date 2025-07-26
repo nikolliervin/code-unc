@@ -1,6 +1,6 @@
 # UNC Documentation
 
-AI-powered code review tool using git diff and various AI providers (OpenAI, Anthropic, Gemini, Ollama).
+AI-powered code review tool using git diff and various AI providers (OpenAI, Anthropic, Mistral, Gemini, Ollama).
 
 ## Table of Contents
 
@@ -158,7 +158,7 @@ The default configuration file (`configs/default.yaml`) includes:
 ```yaml
 # AI Provider Configuration
 ai:
-  provider: "ollama"  # Options: openai, anthropic, gemini, ollama
+  provider: "ollama"  # Options: openai, anthropic, mistral, gemini, ollama
   model: "tinyllama"  # Model name - provider specific
   temperature: 0.1    # 0.0 = deterministic, 1.0 = creative
   max_tokens: 4000    # Maximum tokens to generate

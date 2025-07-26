@@ -6,6 +6,7 @@ UNC supports multiple AI providers for code review. Learn how to configure and u
 
 - **OpenAI** - GPT-4, GPT-3.5-turbo, GPT-4-turbo
 - **Anthropic** - Claude-3-opus, Claude-3-sonnet, Claude-3-haiku
+- **Mistral** - Mistral-large, Mistral-small, Codestral
 - **Google Gemini** - Gemini-2.5-flash, Gemini-2.5-pro, Gemini-1.5-pro
 - **Ollama** - Local models (codellama, tinyllama, etc.)
 
@@ -90,6 +91,47 @@ ai:
 - `claude-3-opus-20240229` (most capable)
 - `claude-3-sonnet-20240229` (balanced)
 - `claude-3-haiku-20240307` (fastest)
+
+## Mistral
+
+### Setup
+
+1. **Get API Key**
+   - Visit [Mistral AI Platform](https://console.mistral.ai/)
+   - Create a new API key
+
+2. **Configure UNC**
+   ```bash
+   # Set provider
+   unc config set ai.provider mistral
+   
+   # Set API key
+   unc config set ai.mistral_api_key "your-api-key"
+   
+   # Set model
+   unc config set ai.model "mistral-large-latest"
+   ```
+
+3. **Environment Variable (Alternative)**
+   ```bash
+   export MISTRAL_API_KEY="your-api-key"
+   ```
+
+### Configuration
+```yaml
+ai:
+  provider: "mistral"
+  model: "mistral-large-latest"
+  temperature: 0.1
+  max_tokens: 4000
+  mistral_api_key: "your-api-key"  # or use environment variable
+```
+
+### Available Models
+- `mistral-large-latest` (most capable, higher cost)
+- `mistral-small-latest` (balanced performance and cost)
+- `codestral-latest` (specialized for code generation)
+- `mistral-moderation-latest` (content moderation)
 
 ## Google Gemini
 

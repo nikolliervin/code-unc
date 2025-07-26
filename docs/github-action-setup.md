@@ -116,8 +116,8 @@ Navigate to your repository → **Settings** → **Secrets and variables** → *
 
 | Secret Name | Description | Example Value |
 |-------------|-------------|---------------|
-| `AI_PROVIDER` | AI service provider | `gemini`, `openai`, or `anthropic` |
-| `AI_MODEL` | Specific AI model to use | `gemini-1.5-pro`, `gpt-4`, `claude-3-sonnet` |
+| `AI_PROVIDER` | AI service provider | `gemini`, `openai`, `anthropic`, or `mistral` |
+| `AI_MODEL` | Specific AI model to use | `gemini-1.5-pro`, `gpt-4`, `claude-3-sonnet`, `mistral-large-latest` |
 
 #### Provider-Specific API Keys (Choose One)
 
@@ -135,6 +135,11 @@ Navigate to your repository → **Settings** → **Secrets and variables** → *
 | Secret Name | Description | How to Get |
 |-------------|-------------|------------|
 | `ANTHROPIC_API_KEY` | Anthropic API key | [Anthropic Console](https://console.anthropic.com/) |
+
+**For Mistral:**
+| Secret Name | Description | How to Get |
+|-------------|-------------|------------|
+| `MISTRAL_API_KEY` | Mistral API key | [Mistral Platform](https://console.mistral.ai/) |
 
 ### 3. How to Add Secrets
 
@@ -159,6 +164,20 @@ GEMINI_API_KEY = AIzaSyC...your-actual-api-key...
 AI_PROVIDER = openai  
 AI_MODEL = gpt-4
 OPENAI_API_KEY = sk-proj-...your-actual-api-key...
+```
+
+**For Anthropic:**
+```
+AI_PROVIDER = anthropic
+AI_MODEL = claude-3-sonnet-20240229
+ANTHROPIC_API_KEY = sk-ant-...your-actual-api-key...
+```
+
+**For Mistral:**
+```
+AI_PROVIDER = mistral
+AI_MODEL = mistral-large-latest
+MISTRAL_API_KEY = ...your-actual-api-key...
 ```
 
 ## Usage
@@ -218,7 +237,7 @@ You can customize the AI behavior by modifying the config in the workflow:
 
 ```yaml
 ai:
-  provider: "gemini"           # AI provider (gemini/openai/anthropic)
+  provider: "gemini"           # AI provider (gemini/openai/anthropic/mistral)
   model: "gemini-1.5-pro"     # Specific model
   temperature: 0.1            # Response randomness (0.0-1.0)
   max_tokens: 4000            # Maximum response length

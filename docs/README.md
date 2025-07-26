@@ -1,6 +1,6 @@
 # UNC Documentation
 
-Welcome to the UNC documentation! UNC is an AI-powered code review tool using git diff and various AI providers (OpenAI, Anthropic, Gemini, Ollama).
+Welcome to the UNC documentation! UNC is an AI-powered code review tool using git diff and various AI providers (OpenAI, Anthropic, Mistral, Gemini, Ollama).
 
 ## 📚 Documentation Index
 

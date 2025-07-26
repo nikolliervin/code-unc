@@ -51,6 +51,8 @@ jobs:
           unc config set ai.anthropic_api_key ${{ secrets.ANTHROPIC_API_KEY }}
         elif [ "${{ secrets.AI_PROVIDER }}" = "gemini" ]; then
           unc config set ai.gemini_api_key ${{ secrets.GEMINI_API_KEY }}
+        elif [ "${{ secrets.AI_PROVIDER }}" = "mistral" ]; then
+          unc config set ai.mistral_api_key ${{ secrets.MISTRAL_API_KEY }}
         fi
         
         unc config set output.format json
@@ -173,13 +175,14 @@ jobs:
 Go to your repository settings → Secrets and variables → Actions, and add:
 
 **Required Secrets:**
-- `AI_PROVIDER`: The AI provider to use (`openai`, `anthropic`, `gemini`, `ollama`)
+- `AI_PROVIDER`: The AI provider to use (`openai`, `anthropic`, `gemini`, `mistral`, `ollama`)
 - `AI_MODEL`: The model name to use
 
 **Provider-specific Secrets:**
 - `OPENAI_API_KEY`: Your OpenAI API key (if using OpenAI)
 - `ANTHROPIC_API_KEY`: Your Anthropic API key (if using Anthropic)
 - `GEMINI_API_KEY`: Your Gemini API key (if using Gemini)
+- `MISTRAL_API_KEY`: Your Mistral API key (if using Mistral)
 
 ### 3. Example Configuration
 
@@ -202,6 +205,13 @@ ANTHROPIC_API_KEY: sk-ant-...
 AI_PROVIDER: gemini
 AI_MODEL: gemini-2.0-flash-exp
 GEMINI_API_KEY: AIza...
+```
+
+**For Mistral:**
+```
+AI_PROVIDER: mistral
+AI_MODEL: mistral-large-latest
+MISTRAL_API_KEY: ...
 ```
 
 ## How It Works

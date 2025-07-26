@@ -17,7 +17,7 @@ The default configuration includes:
 ```yaml
 # AI Provider Configuration
 ai:
-  provider: "ollama"  # Options: openai, anthropic, gemini, ollama
+  provider: "ollama"  # Options: openai, anthropic, mistral, gemini, ollama
   model: "tinyllama"  # Model name - provider specific
   temperature: 0.1    # 0.0 = deterministic, 1.0 = creative
   max_tokens: 4000    # Maximum tokens to generate
@@ -28,6 +28,9 @@ ai:
   
   # Anthropic Settings
   anthropic_api_key: null  # Set via ANTHROPIC_API_KEY environment variable
+  
+  # Mistral Settings
+  mistral_api_key: null  # Set via MISTRAL_API_KEY environment variable
   
   # Google Gemini Settings
   gemini_api_key: null  # Set via GEMINI_API_KEY environment variable
@@ -124,6 +127,7 @@ You can also configure UNC using environment variables:
 # AI Provider API Keys
 export OPENAI_API_KEY="your-openai-key"
 export ANTHROPIC_API_KEY="your-anthropic-key"
+export MISTRAL_API_KEY="your-mistral-key"
 export GEMINI_API_KEY="your-gemini-key"
 
 # Configuration
@@ -151,6 +155,16 @@ ai:
   temperature: 0.1
   max_tokens: 4000
   anthropic_api_key: "sk-ant-..."  # or use environment variable
+```
+
+### Mistral Configuration
+```yaml
+ai:
+  provider: "mistral"
+  model: "mistral-large-latest"
+  temperature: 0.1
+  max_tokens: 4000
+  mistral_api_key: "your-api-key"  # or use environment variable
 ```
 
 ### Ollama Configuration
