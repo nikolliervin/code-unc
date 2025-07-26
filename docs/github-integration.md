@@ -4,31 +4,15 @@ Learn how to integrate UNC with GitHub to automatically review pull requests.
 
 ## Overview
 
-UNC can be integrated with GitHub using GitHub Actions to automatically review pull requests and post comments with AI-generated feedback.
+UNC can be integrated with GitHub using GitHub Actions to automatically review pull requests and post both:
+- **Inline comments** directly on specific code lines with issues
+- **Summary comments** on the pull request with overall feedback and review results
 
 ## Setup
 
 ### 1. Add GitHub Action Workflow
 
-**Basic Version** (`.github/workflows/code-review.yml`):
-Use the simple workflow for basic integration with general comments.
-
-**Inline Comments Version** (`.github/workflows/code-review-inline-simple.yml`):
-Use this workflow for **line-by-line comments** on specific code lines:
-- Comments appear directly on the problematic lines
-- More precise feedback
-- Better developer experience
-- Works with existing JSON output format
-
-**Advanced Version** (`.github/workflows/code-review-advanced.yml`):
-Use the advanced workflow for production environments with:
-- Pre-flight checks for PR size
-- Smart focus area detection
-- Better error handling
-- Cost management
-- Performance optimization
-
-Create `.github/workflows/code-review.yml` in your repository:
+Create `.github/workflows/code-review.yaml` in your repository:
 
 ```yaml
 name: AI Code Review
@@ -69,11 +53,17 @@ jobs:
           unc config set ai.gemini_api_key ${{ secrets.GEMINI_API_KEY }}
         fi
         
-        unc config set output.format markdown
+        unc config set output.format json
     
     - name: Run AI Code Review
       id: review
       run: |
+        unc review run-review \
+          --source ${{ github.event.pull_request.head.sha }} \
+          --target ${{ github.event.pull_request.base.sha }} \
+          --format json > review.json
+        
+        # Also generate markdown summary
         unc review run-review \
           --source ${{ github.event.pull_request.head.sha }} \
           --target ${{ github.event.pull_request.base.sha }} \
@@ -88,7 +78,41 @@ jobs:
         echo "$REVIEW_CONTENT" >> $GITHUB_OUTPUT
         echo "EOF" >> $GITHUB_OUTPUT
     
-    - name: Comment on Pull Request
+    - name: Post Inline Comments
+      uses: actions/github-script@v7
+      with:
+        script: |
+          const fs = require('fs');
+          
+          try {
+            const reviewData = JSON.parse(fs.readFileSync('review.json', 'utf8'));
+            
+            if (reviewData.issues && reviewData.issues.length > 0) {
+              for (const issue of reviewData.issues) {
+                if (issue.file && issue.line) {
+                  const comment = `🤖 **${issue.severity.toUpperCase()} - ${issue.category}**\n\n${issue.description}`;
+                  
+                  try {
+                    await github.rest.pulls.createReviewComment({
+                      owner: context.repo.owner,
+                      repo: context.repo.repo,
+                      pull_number: context.issue.number,
+                      body: comment,
+                      commit_id: '${{ github.event.pull_request.head.sha }}',
+                      path: issue.file,
+                      line: issue.line,
+                    });
+                  } catch (error) {
+                    console.log(`Failed to post comment on ${issue.file}:${issue.line} - ${error.message}`);
+                  }
+                }
+              }
+            }
+          } catch (error) {
+            console.log('Failed to parse review JSON or post inline comments:', error.message);
+          }
+    
+    - name: Post Summary Comment
       uses: actions/github-script@v7
       with:
         script: |
@@ -99,13 +123,13 @@ jobs:
                            reviewContent.includes('### Medium Severity') ||
                            reviewContent.includes('### Low Severity');
           
-          let commentBody = `## 🤖 AI Code Review\n\n`;
+          let commentBody = `## 🤖 AI Code Review Summary\n\n`;
           commentBody += `**Review ID:** ${context.runId}\n`;
           commentBody += `**AI Provider:** ${process.env.AI_PROVIDER}\n`;
           commentBody += `**Model:** ${process.env.AI_MODEL}\n\n`;
           
           if (hasIssues) {
-            commentBody += `⚠️ **Issues Found**\n\n`;
+            commentBody += `⚠️ **Issues Found** - Check inline comments for details\n\n`;
             commentBody += reviewContent;
           } else {
             commentBody += `✅ **No issues found!**\n\n`;
@@ -115,7 +139,7 @@ jobs:
           commentBody += `\n---\n`;
           commentBody += `*This review was generated automatically by [UNC](https://github.com/nikolliervin/code-unc)*`;
           
-          // Delete previous comments from this bot
+          // Delete previous summary comments from this bot
           const comments = await github.rest.issues.listComments({
             owner: context.repo.owner,
             repo: context.repo.repo,
@@ -124,7 +148,7 @@ jobs:
           
           for (const comment of comments.data) {
             if (comment.user.login === 'github-actions[bot]' && 
-                comment.body.includes('AI Code Review')) {
+                comment.body.includes('AI Code Review Summary')) {
               await github.rest.issues.deleteComment({
                 owner: context.repo.owner,
                 repo: context.repo.repo,
@@ -186,8 +210,9 @@ GEMINI_API_KEY: AIza...
 2. **Checkout**: The action checks out the full repository history
 3. **Install**: UNC is installed in the GitHub Actions environment
 4. **Configure**: UNC is configured with your AI provider settings
-5. **Review**: UNC runs a review comparing the PR branch to the base branch
-6. **Comment**: The results are posted as a comment on the pull request
+5. **Review**: UNC runs a review comparing the PR branch to the base branch (generates both JSON and markdown output)
+6. **Inline Comments**: Posts specific comments directly on problematic code lines using the JSON output
+7. **Summary Comment**: Posts an overall review summary comment on the pull request using the markdown output
 
 ## Customization
 
@@ -234,16 +259,36 @@ Only run reviews on certain conditions:
 
 ## Example Output
 
-The GitHub Action will post comments like:
+The GitHub Action will post two types of comments:
+
+### Inline Comments
+Direct comments on specific code lines:
+
+**On line 42 of `src/database.py`:**
+```
+🤖 **HIGH - SECURITY**
+
+Potential SQL injection vulnerability. Use parameterized queries instead of string concatenation.
+```
+
+**On line 15 of `src/algorithm.py`:**
+```
+🤖 **HIGH - PERFORMANCE**
+
+Inefficient algorithm with O(n²) complexity. Consider using a hash map for O(n) performance.
+```
+
+### Summary Comment
+Overall review summary on the pull request:
 
 ```markdown
-## 🤖 AI Code Review
+## 🤖 AI Code Review Summary
 
 **Review ID:** 123456789
 **AI Provider:** openai
 **Model:** gpt-4-turbo
 
-⚠️ **Issues Found**
+⚠️ **Issues Found** - Check inline comments for details
 
 ### High Severity
 - **Security Issue:** Potential SQL injection vulnerability in `src/database.py:42`
@@ -273,19 +318,7 @@ The GitHub Action will post comments like:
    - For large pull requests, consider adding file filters
    - Increase timeout settings if needed
 
-### Debug Mode
 
-Add debug output to the workflow:
-
-```yaml
-- name: Run AI Code Review
-  run: |
-    unc review run-review \
-      --source ${{ github.event.pull_request.head.sha }} \
-      --target ${{ github.event.pull_request.base.sha }} \
-      --verbose \
-      --format markdown > review.md
-```
 
 ## Next Steps
 
