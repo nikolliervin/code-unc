@@ -35,18 +35,25 @@ class AnthropicClient(AIClient):
         
         # Initialize async Anthropic client
         self.client = AsyncAnthropic(
-            api_key=config.api_key,
-            base_url=config.api_base,
+            api_key=config.anthropic_api_key,
             timeout=config.timeout,
         )
     
     def _validate_config(self) -> None:
         """Validate Anthropic configuration."""
-        if not self.config.api_key:
+        if not self.config.anthropic_api_key:
             raise ValueError("Anthropic API key is required")
         
         if self.config.model not in self.PRICING:
             logger.warning(f"Unknown model {self.config.model}, cost estimation may be inaccurate")
+    
+    async def __aenter__(self):
+        """Enter async context manager."""
+        return self
+    
+    async def __aexit__(self, exc_type, exc_val, exc_tb):
+        """Exit async context manager."""
+        await self.close()
     
     async def analyze_code(
         self,
@@ -132,13 +139,13 @@ class AnthropicClient(AIClient):
     
     async def _make_api_call_with_retry(self, api_params: Dict[str, Any]) -> Any:
         """Make API call with retry logic."""
-        for attempt in range(self.config.retry_attempts + 1):
+        for attempt in range(self.config.max_retries + 1):
             try:
                 response = await self.client.messages.create(**api_params)
                 return response
                 
             except anthropic.RateLimitError as e:
-                if attempt < self.config.retry_attempts:
+                if attempt < self.config.max_retries:
                     wait_time = 2 ** attempt  # Exponential backoff
                     logger.warning(f"Rate limit hit, retrying in {wait_time}s (attempt {attempt + 1})")
                     await asyncio.sleep(wait_time)
@@ -146,7 +153,7 @@ class AnthropicClient(AIClient):
                 raise
                 
             except anthropic.APITimeoutError as e:
-                if attempt < self.config.retry_attempts:
+                if attempt < self.config.max_retries:
                     wait_time = 2 ** attempt
                     logger.warning(f"Timeout, retrying in {wait_time}s (attempt {attempt + 1})")
                     await asyncio.sleep(wait_time)
@@ -154,7 +161,7 @@ class AnthropicClient(AIClient):
                 raise
                 
             except anthropic.APIError as e:
-                if attempt < self.config.retry_attempts and hasattr(e, 'status_code') and e.status_code >= 500:
+                if attempt < self.config.max_retries and hasattr(e, 'status_code') and e.status_code >= 500:
                     wait_time = 2 ** attempt
                     logger.warning(f"Server error, retrying in {wait_time}s (attempt {attempt + 1})")
                     await asyncio.sleep(wait_time)
