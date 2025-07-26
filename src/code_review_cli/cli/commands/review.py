@@ -19,6 +19,7 @@ from ...core.ai import OllamaClient, OpenAIClient, AnthropicClient, GeminiClient
 from ...core.ai.prompts import PromptEngine
 from ...core.config.manager import ConfigManager
 from ...core.output.console import ReviewConsole
+from ...core.history.storage import HistoryStorage
 from ...models import ReviewRequest, ReviewResult, ReviewFocus
 from ...models.diff import GitDiff
 from ...models.review import ReviewMetrics, IssueSeverity
@@ -239,6 +240,15 @@ async def _run_review_async(
                     ai_provider_used=config.ai.provider,
                     ai_model_used=config.ai.model,
                 )
+                
+                # Save to history if enabled
+                if config.history.enabled:
+                    try:
+                        history_storage = HistoryStorage(config.history)
+                        history_storage.save_review(result)
+                        logger.debug(f"Saved review {result.id} to history")
+                    except Exception as e:
+                        logger.warning(f"Failed to save review to history: {e}")
                 
                 progress.update(task, description="Formatting results...")
         

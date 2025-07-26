@@ -3,7 +3,7 @@
 from typing import Dict, Any, Optional
 from pathlib import Path
 
-from ...models.config import Config, AIConfig
+from ...models.config import Config, AIConfig, HistoryConfig
 
 
 def get_default_config() -> Config:
@@ -42,6 +42,7 @@ def get_development_config() -> Config:
         log_level="DEBUG",
         output={"verbose": True, "show_progress": True},
         cache={"enabled": True, "git_diff_ttl": 60, "ai_response_ttl": 300},  # Short TTL for dev
+        history={"enabled": False, "max_entries": 100, "retention_days": 7},  # Disabled by default, shorter retention for dev
         ai=AIConfig(
             provider="openai",  # Default to OpenAI
             model="gpt-4",

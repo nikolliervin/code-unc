@@ -84,6 +84,27 @@ class CacheConfig(BaseModel):
     cleanup_interval_hours: int = Field(default=168, description="Cache cleanup interval in hours")
 
 
+class HistoryConfig(BaseModel):
+    """History configuration."""
+    
+    enabled: bool = Field(default=False, description="Enable review history tracking")
+    max_entries: int = Field(default=1000, description="Maximum number of reviews to keep in history")
+    retention_days: int = Field(default=30, description="Days to keep history entries before cleanup")
+    storage_path: Optional[str] = Field(default=None, description="Custom path for history storage (defaults to ~/.config/unc/history)")
+    
+    @validator('max_entries')
+    def validate_max_entries(cls, v):
+        if v < 1:
+            raise ValueError('max_entries must be at least 1')
+        return v
+    
+    @validator('retention_days')
+    def validate_retention_days(cls, v):
+        if v < 1:
+            raise ValueError('retention_days must be at least 1')
+        return v
+
+
 class ReviewConfig(BaseModel):
     """Review configuration."""
     
@@ -106,6 +127,7 @@ class Config(BaseModel):
     git: GitConfig = Field(default_factory=GitConfig, description="Git configuration")
     output: OutputConfig = Field(default_factory=OutputConfig, description="Output configuration")
     cache: CacheConfig = Field(default_factory=CacheConfig, description="Cache configuration")
+    history: HistoryConfig = Field(default_factory=HistoryConfig, description="History configuration")
     review: ReviewConfig = Field(default_factory=ReviewConfig, description="Review configuration")
     
     # Metadata
