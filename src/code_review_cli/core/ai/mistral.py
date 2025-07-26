@@ -36,18 +36,26 @@ class MistralClient(AIClient):
         
         # Initialize Mistral client
         self.client = MistralSDK(
-            api_key=config.api_key,
-            server_url=config.api_base or "https://api.mistral.ai",
+            api_key=config.mistral_api_key,
+            server_url="https://api.mistral.ai",
             timeout_ms=int(config.timeout * 1000) if config.timeout else None,
         )
     
     def _validate_config(self) -> None:
         """Validate Mistral configuration."""
-        if not self.config.api_key:
+        if not self.config.mistral_api_key:
             raise ValueError("Mistral API key is required")
         
         if self.config.model not in self.PRICING:
             logger.warning(f"Unknown model {self.config.model}, cost estimation may be inaccurate")
+    
+    async def __aenter__(self):
+        """Enter async context manager."""
+        return self
+    
+    async def __aexit__(self, exc_type, exc_val, exc_tb):
+        """Exit async context manager."""
+        await self.close()
     
     async def analyze_code(
         self,
@@ -137,7 +145,7 @@ class MistralClient(AIClient):
     
     async def _make_api_call_with_retry(self, api_params: Dict[str, Any]) -> Any:
         """Make API call with retry logic."""
-        for attempt in range(self.config.retry_attempts + 1):
+        for attempt in range(self.config.max_retries + 1):
             try:
                 response = await self.client.chat.complete_async(**api_params)
                 return response
@@ -146,13 +154,13 @@ class MistralClient(AIClient):
                 # Handle rate limiting and retryable errors
                 if hasattr(e, 'status_code'):
                     if e.status_code == 429:  # Rate limit error
-                        if attempt < self.config.retry_attempts:
+                        if attempt < self.config.max_retries:
                             wait_time = 2 ** attempt  # Exponential backoff
                             logger.warning(f"Rate limit hit, retrying in {wait_time}s (attempt {attempt + 1})")
                             await asyncio.sleep(wait_time)
                             continue
                     elif e.status_code >= 500:  # Server error
-                        if attempt < self.config.retry_attempts:
+                        if attempt < self.config.max_retries:
                             wait_time = 2 ** attempt
                             logger.warning(f"Server error, retrying in {wait_time}s (attempt {attempt + 1})")
                             await asyncio.sleep(wait_time)
