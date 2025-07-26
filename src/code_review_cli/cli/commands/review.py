@@ -15,7 +15,7 @@ from rich.progress import Progress, SpinnerColumn, TextColumn
 
 from ...core.git.differ import GitDiffer
 from ...core.git.parser import DiffParser
-from ...core.ai import OllamaClient, OpenAIClient, AnthropicClient, GeminiClient
+from ...core.ai import OllamaClient, OpenAIClient, AnthropicClient, GeminiClient, MistralClient
 from ...core.ai.prompts import PromptEngine
 from ...core.config.manager import ConfigManager
 from ...core.output.console import ReviewConsole
@@ -280,6 +280,8 @@ def _create_ai_client(config):
         return AnthropicClient(config.ai)
     elif config.ai.provider == "gemini":
         return GeminiClient(config.ai)
+    elif config.ai.provider == "mistral":
+        return MistralClient(config.ai)
     else:
         raise ValueError(f"Unsupported AI provider: {config.ai.provider}")
 

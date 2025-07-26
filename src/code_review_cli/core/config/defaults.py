@@ -55,6 +55,9 @@ def get_development_config() -> Config:
             # Anthropic settings  
             anthropic_api_key=None,
             
+            # Mistral settings
+            mistral_api_key=None,
+            
             # Gemini settings
             gemini_api_key=None,
             gemini_base_url=None,

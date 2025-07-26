@@ -11,7 +11,7 @@ console = Console()
 # Create main Typer application
 app = typer.Typer(
     name="unc",
-    help="AI-powered code review tool using git diff and various AI providers (OpenAI, Anthropic, Gemini, Ollama)",
+    help="AI-powered code review tool using git diff and various AI providers (OpenAI, Anthropic, Mistral, Gemini, Ollama)",
     no_args_is_help=True,
     rich_markup_mode="rich",
     epilog="Run 'unc help' for comprehensive command reference and examples",

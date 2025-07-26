@@ -23,7 +23,7 @@ def init_config() -> None:
     console.print("[bold]AI Provider Configuration[/bold]")
     provider = Prompt.ask(
         "Choose AI provider",
-        choices=["openai", "anthropic", "gemini", "ollama"],
+        choices=["openai", "anthropic", "mistral", "gemini", "ollama"],
         default="openai"
     )
     
@@ -77,6 +77,8 @@ def init_config() -> None:
         ai_config.openai_api_key = api_key
     elif provider == "anthropic":
         ai_config.anthropic_api_key = api_key
+    elif provider == "mistral":
+        ai_config.mistral_api_key = api_key
     elif provider == "gemini":
         ai_config.gemini_api_key = api_key
     elif provider == "ollama":
@@ -162,6 +164,8 @@ def show_config() -> None:
             table.add_row("OpenAI API Key", "••••••••" + config.ai.openai_api_key[-4:] if len(config.ai.openai_api_key) > 4 else "••••••••")
         elif config.ai.provider == "anthropic" and config.ai.anthropic_api_key:
             table.add_row("Anthropic API Key", "••••••••" + config.ai.anthropic_api_key[-4:] if len(config.ai.anthropic_api_key) > 4 else "••••••••")
+        elif config.ai.provider == "mistral" and config.ai.mistral_api_key:
+            table.add_row("Mistral API Key", "••••••••" + config.ai.mistral_api_key[-4:] if len(config.ai.mistral_api_key) > 4 else "••••••••")
         elif config.ai.provider == "gemini" and config.ai.gemini_api_key:
             table.add_row("Gemini API Key", "••••••••" + config.ai.gemini_api_key[-4:] if len(config.ai.gemini_api_key) > 4 else "••••••••")
         
@@ -254,6 +258,8 @@ def show_raw_config() -> None:
                 config_dict['ai']['openai_api_key'] = '••••••••' + config_dict['ai']['openai_api_key'][-4:]
             if 'anthropic_api_key' in config_dict['ai'] and config_dict['ai']['anthropic_api_key']:
                 config_dict['ai']['anthropic_api_key'] = '••••••••' + config_dict['ai']['anthropic_api_key'][-4:]
+            if 'mistral_api_key' in config_dict['ai'] and config_dict['ai']['mistral_api_key']:
+                config_dict['ai']['mistral_api_key'] = '••••••••' + config_dict['ai']['mistral_api_key'][-4:]
             if 'gemini_api_key' in config_dict['ai'] and config_dict['ai']['gemini_api_key']:
                 config_dict['ai']['gemini_api_key'] = '••••••••' + config_dict['ai']['gemini_api_key'][-4:]
         
@@ -297,7 +303,7 @@ def validate_config() -> None:
         # Validate AI configuration
         if not config.ai.provider:
             errors.append("AI provider is not set")
-        elif config.ai.provider not in ['openai', 'anthropic', 'gemini', 'ollama']:
+        elif config.ai.provider not in ['openai', 'anthropic', 'mistral', 'gemini', 'ollama']:
             errors.append(f"Invalid AI provider: {config.ai.provider}")
         
         if not config.ai.model:
@@ -308,6 +314,8 @@ def validate_config() -> None:
             errors.append("OpenAI API key is required for OpenAI provider")
         elif config.ai.provider == "anthropic" and not config.ai.anthropic_api_key:
             errors.append("Anthropic API key is required for Anthropic provider")
+        elif config.ai.provider == "mistral" and not config.ai.mistral_api_key:
+            errors.append("Mistral API key is required for Mistral provider")
         elif config.ai.provider == "gemini" and not config.ai.gemini_api_key:
             errors.append("Gemini API key is required for Gemini provider")
         
